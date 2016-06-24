@@ -1,0 +1,21 @@
+*.aux
+*.dvi
+*.log
+*.pdf
+*.gz
+
+# User-specific files
+*.suo
+*.user
+*.sln.docstates
+*.sdf
+
+# Build results
+
+[Bb]in/
+[Rr]elease/
+x64/
+build/
+[Oo]bj/
+[Dd]ebug/
+*.opendb
