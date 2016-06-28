@@ -54,6 +54,7 @@ template <typename T> void test(
 	std::vector<T> &u_3,
 	std::vector<T> &d,
 	std::vector<T> &z,
+	std::vector<T> &z_2,
 	std::vector<T> &y,
 	std::vector<T> &delta_2,
 	std::vector<T> &delta_3,
@@ -160,6 +161,7 @@ int main(void)
 		std::vector<std::vector<double>> w_2(HIDDEN_LAYER_UNIT + BIAS_SIZE, std::vector<double>(train_img_info->get_size() + BIAS_SIZE));
 		initialize_weights(w_2, HIDDEN_LAYER_UNIT + BIAS_SIZE, train_img_info->get_size() + BIAS_SIZE);
 		std::vector<double> u_2(HIDDEN_LAYER_UNIT + BIAS_SIZE);
+		std::vector<double> z_2(HIDDEN_LAYER_UNIT + BIAS_SIZE);
 		std::vector<double> delta_2(HIDDEN_LAYER_UNIT + BIAS_SIZE);
 
 		//! output layer
@@ -185,28 +187,11 @@ int main(void)
 				set_ans(d, uchar_label_buf[count]);
 
 				//! forward propagation
-				for (int j = 0; j < HIDDEN_LAYER_UNIT + BIAS_SIZE; j++) {
-					if (j == 0)
-						u_2[j] = 1.0;
-					else
-						/*
-						for (int i = 0; i < train_img_info->get_size() + BIAS_SIZE; i++)
-						u_2[j] += z[i] * w_2[j][i];
-						*/
-						u_2[j] = std::inner_product(z.begin(), z.end(), w_2[j].begin(), 0.0);
-				}
-				for (int k = BIAS_SIZE; k < MNIST_NUMBER_OF_OUTPUT_CLASS + BIAS_SIZE; k++) {
-					if (k == 0)
-						u_3[k] = 1.0;
-					else {
-						/*
-						for (int j = 0; j < HIDDEN_LAYER_UNIT + BIAS_SIZE; j++)
-						u_3[k] += ReLU(u_2[j]) * w_3[k][j];
-						*/
-						u_2 = ReLU_vec(u_2);
-						u_3[k] = std::inner_product(u_2.begin(), u_2.end(), w_3[k].begin(), 0.0);
-					}
-				}
+				for (int j = 0; j < HIDDEN_LAYER_UNIT + BIAS_SIZE; j++)
+					u_2[j] = j == 0 ? 1.0 : std::inner_product(z.begin(), z.end(), w_2[j].begin(), 0.0);
+				z_2 = ReLU_vec(u_2);
+				for (int k = BIAS_SIZE; k < MNIST_NUMBER_OF_OUTPUT_CLASS + BIAS_SIZE; k++)
+					u_3[k] = k == 0 ? 1.0 : std::inner_product(z_2.begin(), z_2.end(), w_3[k].begin(), 0.0);
 
 				//! calculate output
 				soft_max(u_3, y, MNIST_NUMBER_OF_OUTPUT_CLASS);
@@ -217,12 +202,13 @@ int main(void)
 					for (int k = BIAS_SIZE; k < MNIST_NUMBER_OF_OUTPUT_CLASS + BIAS_SIZE; k++)
 						delta_2[j] += u_2[j] > 0 ? delta_3[k] * w_3[k][j] : 0;
 				}
+
 				//! update paramaters
 				for (int j = 0; j < HIDDEN_LAYER_UNIT + BIAS_SIZE; j++)
 					for (int k = BIAS_SIZE; k < MNIST_NUMBER_OF_OUTPUT_CLASS + BIAS_SIZE; k++)
 						w_3[k][j] -= (j == 0) ?
 							LEARNING_RATE_BIAS * delta_3[k] :
-							LEARNING_RATE_WEIGHT * delta_3[k] * ReLU(u_2[j]);
+							LEARNING_RATE_WEIGHT * delta_3[k] * z_2[j];
 				for (int i = 0; i < train_img_info->get_size() + BIAS_SIZE; i++)
 					for (int j = BIAS_SIZE; j < HIDDEN_LAYER_UNIT + BIAS_SIZE; j++)
 						w_2[j][i] -= (i == 0) ?
@@ -232,7 +218,7 @@ int main(void)
 				count++;
 
 				if (count % 10000 == 0)
-					test(w_2, w_3, u_2, u_3, d, z, y, delta_2, delta_3, test_img_info, &test_src, &test_label);
+					test(w_2, w_3, u_2, u_3, d, z, z_2, y, delta_2, delta_3, test_img_info, &test_src, &test_label);
 			}
 			n_epoch++;
 			count = 0;
@@ -280,6 +266,7 @@ template <typename T> void test(
 	std::vector<T> &u_3,
 	std::vector<T> &d,
 	std::vector<T> &z,
+	std::vector<T> &z_2,
 	std::vector<T> &y,
 	std::vector<T> &delta_2,
 	std::vector<T> &delta_3,
@@ -307,12 +294,10 @@ template <typename T> void test(
 
 		//! forward propagation
 		for (int j = 0; j < HIDDEN_LAYER_UNIT + BIAS_SIZE; j++)
-			for (int i = 0; i < test_img_info->get_size() + BIAS_SIZE; i++)
-				u_2[j] += z[i] * w_2[j][i];
-
-		for (int k = 0; k < MNIST_NUMBER_OF_OUTPUT_CLASS + BIAS_SIZE; k++)
-			for (int j = 0; j < HIDDEN_LAYER_UNIT + BIAS_SIZE; j++)
-				u_3[k] += ReLU(u_2[j]) * w_3[k][j];
+			u_2[j] = j == 0 ? 1.0 : std::inner_product(z.begin(), z.end(), w_2[j].begin(), 0.0);
+		z_2 = ReLU_vec(u_2);
+		for (int k = BIAS_SIZE; k < MNIST_NUMBER_OF_OUTPUT_CLASS + BIAS_SIZE; k++)
+			u_3[k] = k == 0 ? 1.0 : std::inner_product(z_2.begin(), z_2.end(), w_3[k].begin(), 0.0);
 
 		soft_max(u_3, y, MNIST_NUMBER_OF_OUTPUT_CLASS);
 
