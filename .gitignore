@@ -19,3 +19,4 @@ build/
 [Oo]bj/
 [Dd]ebug/
 *.opendb
+*.db
