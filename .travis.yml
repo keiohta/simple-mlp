@@ -1,0 +1,10 @@
+sudo: false
+language: cpp
+notifications:
+  email:
+    recipients: <GitHub's user email>
+    on_success: change
+    on_failure: always
+script:
+  - cd gcc
+  - make
